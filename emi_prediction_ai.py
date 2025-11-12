@@ -25,7 +25,7 @@ warnings.filterwarnings('ignore')
 # STEP 1: DATA LOADING & PREPROCESSING
 # =====================================================
 @st.cache_data
-def load_and_preprocess_data(file_path="EMI_dataset.csv"):
+def load_and_preprocess_data(file_path="emi_prediction_dataset.csv"):
     df = pd.read_csv(file_path)
     df.fillna(df.median(numeric_only=True), inplace=True)
     df.fillna(df.mode().iloc[0], inplace=True)
