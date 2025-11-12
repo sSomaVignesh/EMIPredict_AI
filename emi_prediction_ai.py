@@ -1,15 +1,6 @@
 # ==========================================================
 # EMIPredict AI - Intelligent Financial Risk Assessment App
 # ==========================================================
-# Covers Steps 1–7:
-# 1. Data Loading & Preprocessing
-# 2. Exploratory Data Analysis (EDA)
-# 3. Feature Engineering
-# 4. Model Development
-# 5. MLflow Integration
-# 6. Streamlit Application
-# 7. Cloud Deployment Ready
-# ==========================================================
 
 import pandas as pd
 import numpy as np
@@ -34,20 +25,19 @@ warnings.filterwarnings('ignore')
 # STEP 1: DATA LOADING & PREPROCESSING
 # =====================================================
 @st.cache_data
-def load_and_preprocess_data(file_path="emi_prediction_dataset.csv"):
+def load_and_preprocess_data(file_path="EMI_dataset.csv"):
     df = pd.read_csv(file_path)
     df.fillna(df.median(numeric_only=True), inplace=True)
     df.fillna(df.mode().iloc[0], inplace=True)
     df.drop_duplicates(inplace=True)
 
-    # Encode categorical columns safely
+    # Encode categorical safely
     categorical_cols = df.select_dtypes(include=['object']).columns
     for col in categorical_cols:
         df[col] = df[col].astype(str).fillna("Unknown")
         le = LabelEncoder()
         df[col] = le.fit_transform(df[col])
 
-    # Feature splits
     X_class = df.drop(['emi_eligibility', 'max_monthly_emi'], axis=1)
     y_class = df['emi_eligibility']
     X_reg = df.drop(['emi_eligibility', 'max_monthly_emi'], axis=1)
@@ -64,33 +54,93 @@ def load_and_preprocess_data(file_path="emi_prediction_dataset.csv"):
 
     return df, Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_train, yr_test
 
+
 # =====================================================
-# STEP 2: EXPLORATORY DATA ANALYSIS
+# STEP 2: EXPLORATORY DATA ANALYSIS (15 GRAPHS)
 # =====================================================
 def eda_section(df):
-    st.header("📊 Exploratory Data Analysis")
-    st.write("A quick look at your dataset and variable patterns:")
+    st.header("Exploratory Data Analysis (EDA)")
+    st.write("Visualizing trends, correlations, and risk indicators across 400K financial profiles.")
 
-    st.subheader("Dataset Overview")
-    st.dataframe(df.head())
-
-    st.subheader("Statistical Summary")
-    st.dataframe(df.describe())
-
-    st.subheader("Correlation Heatmap")
-    fig, ax = plt.subplots(figsize=(10,6))
-    sns.heatmap(df.corr(), cmap='coolwarm', annot=False, ax=ax)
-    st.pyplot(fig)
-
-    st.subheader("Distribution of EMI Eligibility")
+    # Graph 1 - EMI Eligibility Distribution
     fig, ax = plt.subplots()
     sns.countplot(x='emi_eligibility', data=df, ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Credit Score Distribution")
+    # Graph 2 - Credit Score Distribution
     fig, ax = plt.subplots()
-    sns.histplot(df['credit_score'], bins=30, kde=True, ax=ax)
+    sns.histplot(df['credit_score'], bins=30, kde=True, color='blue', ax=ax)
     st.pyplot(fig)
+
+    # Graph 3 - Monthly Salary Distribution
+    fig, ax = plt.subplots()
+    sns.histplot(df['monthly_salary'], bins=30, kde=True, color='green', ax=ax)
+    st.pyplot(fig)
+
+    # Graph 4 - EMI Scenario Count
+    fig, ax = plt.subplots()
+    sns.countplot(x='emi_scenario', data=df, ax=ax)
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
+
+    # Graph 5 - Correlation Heatmap
+    fig, ax = plt.subplots(figsize=(12, 8))
+    sns.heatmap(df.corr(), cmap='coolwarm', annot=False, ax=ax)
+    st.pyplot(fig)
+
+    # Graph 6 - Age vs EMI Eligibility
+    fig, ax = plt.subplots()
+    sns.boxplot(x='emi_eligibility', y='age', data=df, ax=ax)
+    st.pyplot(fig)
+
+    # Graph 7 - Salary vs EMI Eligibility
+    fig, ax = plt.subplots()
+    sns.boxplot(x='emi_eligibility', y='monthly_salary', data=df, ax=ax)
+    st.pyplot(fig)
+
+    # Graph 8 - Credit Score vs EMI Eligibility
+    fig, ax = plt.subplots()
+    sns.boxplot(x='emi_eligibility', y='credit_score', data=df, ax=ax)
+    st.pyplot(fig)
+
+    # Graph 9 - Existing Loan Status
+    fig, ax = plt.subplots()
+    sns.countplot(x='existing_loans', hue='emi_eligibility', data=df, ax=ax)
+    st.pyplot(fig)
+
+    # Graph 10 - Family Size Distribution
+    fig, ax = plt.subplots()
+    sns.histplot(df['family_size'], bins=15, kde=True, color='purple', ax=ax)
+    st.pyplot(fig)
+
+    # Graph 11 - Expense Comparison
+    fig, ax = plt.subplots()
+    sns.barplot(x='emi_eligibility', y='groceries_utilities', data=df, ax=ax)
+    st.pyplot(fig)
+
+    # Graph 12 - Gender vs EMI Eligibility
+    fig, ax = plt.subplots()
+    sns.countplot(x='gender', hue='emi_eligibility', data=df, ax=ax)
+    st.pyplot(fig)
+
+    # Graph 13 - Education Level vs EMI Eligibility
+    fig, ax = plt.subplots()
+    sns.countplot(x='education', hue='emi_eligibility', data=df, ax=ax)
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
+
+    # Graph 14 - Loan Amount vs Scenario
+    fig, ax = plt.subplots()
+    sns.boxplot(x='emi_scenario', y='requested_amount', data=df, ax=ax)
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
+
+    # Graph 15 - Tenure vs Scenario
+    fig, ax = plt.subplots()
+    sns.boxplot(x='emi_scenario', y='requested_tenure', data=df, ax=ax)
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
+
 
 # =====================================================
 # STEP 3: FEATURE ENGINEERING
@@ -104,8 +154,9 @@ def feature_engineering(df):
     df['risk_score'] = (df['credit_score'] / 850) * (1 - df['debt_to_income'])
     return df
 
+
 # =====================================================
-# STEP 4: MODEL DEVELOPMENT
+# STEP 4 + 5: MODEL DEVELOPMENT + MLflow INTEGRATION
 # =====================================================
 def train_models(Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_train, yr_test):
     class_models = {
@@ -166,46 +217,49 @@ def train_models(Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_tra
                 best_rmse = metrics["RMSE"]
                 best_reg = model
 
-    st.success("✅ Models trained and logged in MLflow!")
+    st.success("Models trained and logged in MLflow!")
+    st.info("To view MLflow dashboard, run in terminal: `mlflow ui` then open http://127.0.0.1:5000")
     return best_class, best_reg
 
+
 # =====================================================
-# STEP 6: STREAMLIT APPLICATION UI
+# STEP 6: STREAMLIT APPLICATION
 # =====================================================
 def main():
     st.set_page_config(page_title="EMIPredict AI", layout="wide")
 
-    st.title("💰 EMIPredict AI - Financial Risk Assessment Platform")
-    st.caption("An ML-powered EMI eligibility and affordability prediction system.")
-
-    # Sidebar navigation
-    menu = ["🏠 Home", "📊 EDA", "⚙️ Train Models", "🔮 Predict EMI"]
+    # Sidebar logo & navigation
+    st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/3/3a/Loan_Icon.png", width=100)
+    menu = ["Home", "EDA", "Train Models", "Predict EMI", "About"]
     choice = st.sidebar.radio("Navigation", menu)
 
-    # Load data
     df, Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_train, yr_test = load_and_preprocess_data()
     df = feature_engineering(df)
 
-    if choice == "🏠 Home":
-        st.subheader("Welcome to EMIPredict AI!")
-        st.write("""
-        This platform uses **Machine Learning** to:
-        - Predict whether a customer is eligible for EMI (Classification)
-        - Estimate the maximum safe EMI amount (Regression)
-        - Provide visual financial analysis and insights
+    if choice == "Home":
+        st.title("💰 EMIPredict AI")
+        st.subheader("Intelligent Financial Risk Assessment Platform")
+        st.markdown("""
+        **EMIPredict AI** helps financial institutions, fintech firms, and individuals assess:
+        - ✅ EMI eligibility classification  
+        - 📈 Maximum safe EMI affordability  
+        - 📊 Real-time financial risk scoring  
+        - 🔍 Deep data analysis with 400K+ financial records  
+
+        Powered by **Machine Learning, XGBoost, Random Forests, and MLflow tracking.**
         """)
 
-    elif choice == "📊 EDA":
+    elif choice == "EDA":
         eda_section(df)
 
-    elif choice == "⚙️ Train Models":
+    elif choice == "Train Models":
         best_class, best_reg = train_models(Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_train, yr_test)
         st.session_state["best_class_model"] = best_class
         st.session_state["best_reg_model"] = best_reg
-        st.success("Training Complete! You can now go to 'Predict EMI' tab.")
+        st.success("Training Complete! Now go to 'Predict EMI' tab.")
 
-    elif choice == "🔮 Predict EMI":
-        st.subheader("Real-Time EMI Prediction")
+    elif choice == "Predict EMI":
+        st.header("Real-Time EMI Prediction")
 
         monthly_salary = st.number_input("Monthly Salary (INR)", 15000, 200000, 50000)
         credit_score = st.slider("Credit Score", 300, 850, 700)
@@ -219,25 +273,29 @@ def main():
             if st.button("Predict EMI Eligibility"):
                 clf = st.session_state["best_class_model"]
                 reg = st.session_state["best_reg_model"]
-
                 sample = np.array([[monthly_salary, credit_score, bank_balance, current_emi, total_expenses]])
                 pred_class = clf.predict(sample)[0]
                 pred_emi = reg.predict(sample)[0]
-
                 st.success(f"Predicted EMI Eligibility: {pred_class}")
                 st.info(f"Estimated Safe Monthly EMI: ₹{pred_emi:,.2f}")
 
-    st.markdown("---")
-    st.caption("© EMIPredict AI | Intelligent Financial Risk Assessment Platform")
+    elif choice == "About":
+        st.header("About EMIPredict AI")
+        st.markdown("""
+        **Project Overview:**  
+        EMIPredict AI is a FinTech-focused ML platform that predicts EMI eligibility and affordability using real-world financial and demographic data.  
+        It integrates **MLflow** for experiment tracking, supports dual ML pipelines (Classification + Regression), and visualizes patterns across risk segments.
 
-# =====================================================
-# STEP 7: CLOUD DEPLOYMENT READY
-# =====================================================
-# To deploy:
-# 1. Push this file and dataset + requirements.txt to GitHub
-# 2. Go to https://share.streamlit.io
-# 3. Connect your GitHub repo and deploy
-# 4. Enjoy your live app!
+        **Architecture Summary:**  
+        - Machine Learning Models: Logistic Regression, Random Forest, XGBoost  
+        - Feature Engineering: Financial ratios, affordability, risk scoring  
+        - MLflow Integration: Automated experiment logging and model registry  
+        - Deployment: Streamlit Cloud  
+        """)
+
+    st.markdown("---")
+    st.caption("© 2025 EMIPredict AI | Intelligent Financial Risk Assessment Platform")
+
 
 if __name__ == "__main__":
     main()
