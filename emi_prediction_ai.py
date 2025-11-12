@@ -26,33 +26,56 @@ warnings.filterwarnings('ignore')
 # =====================================================
 @st.cache_data
 def load_and_preprocess_data(file_path="emi_prediction_dataset.csv"):
+    """
+    Loads CSV, cleans, encodes, and returns:
+    df, Xc_train, Xc_test, yc_train, yc_test,
+    Xr_train, Xr_test, yr_train, yr_test, scaler
+    """
     df = pd.read_csv(file_path)
+    # basic cleaning
     df.fillna(df.median(numeric_only=True), inplace=True)
     df.fillna(df.mode().iloc[0], inplace=True)
     df.drop_duplicates(inplace=True)
 
-    # Encode categorical safely
+    # encode categorical safely (needed for EDA and other operations)
     categorical_cols = df.select_dtypes(include=['object']).columns
     for col in categorical_cols:
         df[col] = df[col].astype(str).fillna("Unknown")
         le = LabelEncoder()
         df[col] = le.fit_transform(df[col])
 
-    X_class = df.drop(['emi_eligibility', 'max_monthly_emi'], axis=1)
+    # --- IMPORTANT: select the SAME features used by the Streamlit UI ---
+    selected_features = [
+        'monthly_salary',
+        'credit_score',
+        'bank_balance',
+        'current_emi_amount',      # ensure this matches your csv column name
+        'groceries_utilities'      # the UI will ask for groceries/utilities
+    ]
+
+    # verify selected features exist
+    missing = [c for c in selected_features if c not in df.columns]
+    if missing:
+        raise ValueError(f"Selected features missing from dataset: {missing}")
+
+    X_class = df[selected_features].copy()
     y_class = df['emi_eligibility']
-    X_reg = df.drop(['emi_eligibility', 'max_monthly_emi'], axis=1)
+    X_reg = df[selected_features].copy()
     y_reg = df['max_monthly_emi']
 
+    # train-test splits
     Xc_train, Xc_test, yc_train, yc_test = train_test_split(X_class, y_class, test_size=0.2, random_state=42)
     Xr_train, Xr_test, yr_train, yr_test = train_test_split(X_reg, y_reg, test_size=0.2, random_state=42)
 
+    # Standard scaling (fit on training)
     scaler = StandardScaler()
     Xc_train = scaler.fit_transform(Xc_train)
     Xc_test = scaler.transform(Xc_test)
-    Xr_train = scaler.fit_transform(Xr_train)
+    # For regression we use the same scaler (features are identical)
+    Xr_train = scaler.transform(Xr_train)
     Xr_test = scaler.transform(Xr_test)
 
-    return df, Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_train, yr_test
+    return df, Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_train, yr_test, scaler
 
 
 # =====================================================
@@ -60,82 +83,82 @@ def load_and_preprocess_data(file_path="emi_prediction_dataset.csv"):
 # =====================================================
 def eda_section(df):
     st.header("Exploratory Data Analysis (EDA)")
-    st.write("Visualizing trends, correlations, and risk indicators across 400K financial profiles.")
+    st.write("Visualizing trends, correlations, and risk indicators across the dataset.")
 
-    st.subheader("Graph 1 - EMI Eligibility Distribution")
+    st.subheader("1 — EMI Eligibility Distribution")
     fig, ax = plt.subplots()
     sns.countplot(x='emi_eligibility', data=df, ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 2 - Credit Score Distribution")
+    st.subheader("2 — Credit Score Distribution")
     fig, ax = plt.subplots()
     sns.histplot(df['credit_score'], bins=30, kde=True, color='blue', ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 3 - Monthly Salary Distribution")
+    st.subheader("3 — Monthly Salary Distribution")
     fig, ax = plt.subplots()
     sns.histplot(df['monthly_salary'], bins=30, kde=True, color='green', ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 4 - EMI Scenario Count")
+    st.subheader("4 — EMI Scenario Count")
     fig, ax = plt.subplots()
     sns.countplot(x='emi_scenario', data=df, ax=ax)
     plt.xticks(rotation=45)
     st.pyplot(fig)
 
-    st.subheader("Graph 5 - Correlation Heatmap")
+    st.subheader("5 — Correlation Heatmap")
     fig, ax = plt.subplots(figsize=(12, 8))
     sns.heatmap(df.corr(), cmap='coolwarm', annot=False, ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 6 - Age vs EMI Eligibility")
+    st.subheader("6 — Age vs EMI Eligibility")
     fig, ax = plt.subplots()
     sns.boxplot(x='emi_eligibility', y='age', data=df, ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 7 - Salary vs EMI Eligibility")
+    st.subheader("7 — Salary vs EMI Eligibility")
     fig, ax = plt.subplots()
     sns.boxplot(x='emi_eligibility', y='monthly_salary', data=df, ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 8 - Credit Score vs EMI Eligibility")
+    st.subheader("8 — Credit Score vs EMI Eligibility")
     fig, ax = plt.subplots()
     sns.boxplot(x='emi_eligibility', y='credit_score', data=df, ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 9 - Existing Loan Status")
+    st.subheader("9 — Existing Loan Status by Eligibility")
     fig, ax = plt.subplots()
     sns.countplot(x='existing_loans', hue='emi_eligibility', data=df, ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 10 - Family Size Distribution")
+    st.subheader("10 — Family Size Distribution")
     fig, ax = plt.subplots()
     sns.histplot(df['family_size'], bins=15, kde=True, color='purple', ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 11 - Expense Comparison")
+    st.subheader("11 — Groceries & Utilities by Eligibility")
     fig, ax = plt.subplots()
     sns.barplot(x='emi_eligibility', y='groceries_utilities', data=df, ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 12 - Gender vs EMI Eligibility")
+    st.subheader("12 — Gender vs EMI Eligibility")
     fig, ax = plt.subplots()
     sns.countplot(x='gender', hue='emi_eligibility', data=df, ax=ax)
     st.pyplot(fig)
 
-    st.subheader("Graph 13 - Education Level vs EMI Eligibility")
+    st.subheader("13 — Education Level vs EMI Eligibility")
     fig, ax = plt.subplots()
     sns.countplot(x='education', hue='emi_eligibility', data=df, ax=ax)
     plt.xticks(rotation=45)
     st.pyplot(fig)
 
-    st.subheader("Graph 14 - Loan Amount vs Scenario")
+    st.subheader("14 — Requested Amount by EMI Scenario")
     fig, ax = plt.subplots()
     sns.boxplot(x='emi_scenario', y='requested_amount', data=df, ax=ax)
     plt.xticks(rotation=45)
     st.pyplot(fig)
 
-    st.subheader("Graph 15 - Tenure vs Scenario")
+    st.subheader("15 — Requested Tenure by EMI Scenario")
     fig, ax = plt.subplots()
     sns.boxplot(x='emi_scenario', y='requested_tenure', data=df, ax=ax)
     plt.xticks(rotation=45)
@@ -146,12 +169,15 @@ def eda_section(df):
 # STEP 3: FEATURE ENGINEERING
 # =====================================================
 def feature_engineering(df):
-    df['debt_to_income'] = df['current_emi_amount'] / (df['monthly_salary'] + 1)
-    df['expense_to_income'] = (
-        df['groceries_utilities'] + df['travel_expenses'] + df['other_monthly_expenses']
-    ) / (df['monthly_salary'] + 1)
-    df['affordability_ratio'] = df['bank_balance'] / (df['monthly_salary'] + 1)
-    df['risk_score'] = (df['credit_score'] / 850) * (1 - df['debt_to_income'])
+    # creates helpful derived features for EDA/analysis but models are trained on selected_features above
+    if 'current_emi_amount' in df.columns and 'monthly_salary' in df.columns:
+        df['debt_to_income'] = df['current_emi_amount'] / (df['monthly_salary'] + 1)
+    if 'groceries_utilities' in df.columns and 'monthly_salary' in df.columns:
+        df['expense_to_income'] = df['groceries_utilities'] / (df['monthly_salary'] + 1)
+    if 'bank_balance' in df.columns and 'monthly_salary' in df.columns:
+        df['affordability_ratio'] = df['bank_balance'] / (df['monthly_salary'] + 1)
+    if 'credit_score' in df.columns:
+        df['risk_score'] = (df['credit_score'] / 850) * (1 - df.get('debt_to_income', 0))
     return df
 
 
@@ -218,7 +244,7 @@ def train_models(Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_tra
                 best_reg = model
 
     st.success("Models trained and logged in MLflow!")
-    st.info("To view MLflow dashboard, run in terminal: `mlflow ui` then open http://127.0.0.1:5000")
+    st.info("To view MLflow dashboard, run in terminal: `python -m mlflow ui` then open http://127.0.0.1:5000")
     return best_class, best_reg
 
 
@@ -255,11 +281,11 @@ def main():
     )
 
     # Sidebar logo & navigation
-    st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/3/3a/Loan_Icon.png", width=100)
     menu = ["Home", "EDA", "Train Models", "Predict EMI", "About"]
     choice = st.sidebar.radio("Navigation", menu)
 
-    df, Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_train, yr_test = load_and_preprocess_data()
+    # Load data and preprocessing
+    df, Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_train, yr_test, scaler = load_and_preprocess_data()
     df = feature_engineering(df)
 
     if choice == "Home":
@@ -291,7 +317,7 @@ def main():
         credit_score = st.slider("Credit Score", 300, 850, 700)
         current_emi = st.number_input("Current EMI (INR)", 0, 50000, 1000)
         bank_balance = st.number_input("Bank Balance (INR)", 1000, 1000000, 20000)
-        total_expenses = st.number_input("Total Monthly Expenses (INR)", 1000, 100000, 10000)
+        groceries_utilities = st.number_input("Monthly Groceries & Utilities (INR)", 1000, 100000, 10000)
 
         if "best_class_model" not in st.session_state:
             st.warning("Please train models first in the 'Train Models' tab.")
@@ -299,9 +325,14 @@ def main():
             if st.button("Predict EMI Eligibility"):
                 clf = st.session_state["best_class_model"]
                 reg = st.session_state["best_reg_model"]
-                sample = np.array([[monthly_salary, credit_score, bank_balance, current_emi, total_expenses]])
-                pred_class = clf.predict(sample)[0]
-                pred_emi = reg.predict(sample)[0]
+
+                # build sample in the exact same order as selected_features used during training
+                sample = np.array([[monthly_salary, credit_score, bank_balance, current_emi, groceries_utilities]])
+                # scale using the same scaler used in preprocessing
+                sample_scaled = scaler.transform(sample)
+
+                pred_class = clf.predict(sample_scaled)[0]
+                pred_emi = reg.predict(sample_scaled)[0]
                 st.success(f"Predicted EMI Eligibility: {pred_class}")
                 st.info(f"Estimated Safe Monthly EMI: ₹{pred_emi:,.2f}")
 
