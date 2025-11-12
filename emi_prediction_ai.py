@@ -228,6 +228,32 @@ def train_models(Xc_train, Xc_test, yc_train, yc_test, Xr_train, Xr_test, yr_tra
 def main():
     st.set_page_config(page_title="EMIPredict AI", layout="wide")
 
+    # Apply wide layout and set a consistent colour style
+    st.markdown(
+        """
+        <style>
+            .main {
+                background-color: #f9fafc;
+                color: #1a1a1a;
+            }
+            h1, h2, h3 {
+                color: #0e4f88;
+            }
+            .stButton>button {
+                background-color: #0e4f88;
+                color: white;
+                border-radius: 10px;
+                height: 3em;
+                width: 100%;
+            }
+            .stButton>button:hover {
+                background-color: #1261a0;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     # Sidebar logo & navigation
     st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/3/3a/Loan_Icon.png", width=100)
     menu = ["Home", "EDA", "Train Models", "Predict EMI", "About"]
