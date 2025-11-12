@@ -62,80 +62,80 @@ def eda_section(df):
     st.header("Exploratory Data Analysis (EDA)")
     st.write("Visualizing trends, correlations, and risk indicators across 400K financial profiles.")
 
-    # Graph 1 - EMI Eligibility Distribution
+    st.subheader("Graph 1 - EMI Eligibility Distribution")
     fig, ax = plt.subplots()
     sns.countplot(x='emi_eligibility', data=df, ax=ax)
     st.pyplot(fig)
 
-    # Graph 2 - Credit Score Distribution
+    st.subheader("Graph 2 - Credit Score Distribution")
     fig, ax = plt.subplots()
     sns.histplot(df['credit_score'], bins=30, kde=True, color='blue', ax=ax)
     st.pyplot(fig)
 
-    # Graph 3 - Monthly Salary Distribution
+    st.subheader("Graph 3 - Monthly Salary Distribution")
     fig, ax = plt.subplots()
     sns.histplot(df['monthly_salary'], bins=30, kde=True, color='green', ax=ax)
     st.pyplot(fig)
 
-    # Graph 4 - EMI Scenario Count
+    st.subheader("Graph 4 - EMI Scenario Count")
     fig, ax = plt.subplots()
     sns.countplot(x='emi_scenario', data=df, ax=ax)
     plt.xticks(rotation=45)
     st.pyplot(fig)
 
-    # Graph 5 - Correlation Heatmap
+    st.subheader("Graph 5 - Correlation Heatmap")
     fig, ax = plt.subplots(figsize=(12, 8))
     sns.heatmap(df.corr(), cmap='coolwarm', annot=False, ax=ax)
     st.pyplot(fig)
 
-    # Graph 6 - Age vs EMI Eligibility
+    st.subheader("Graph 6 - Age vs EMI Eligibility")
     fig, ax = plt.subplots()
     sns.boxplot(x='emi_eligibility', y='age', data=df, ax=ax)
     st.pyplot(fig)
 
-    # Graph 7 - Salary vs EMI Eligibility
+    st.subheader("Graph 7 - Salary vs EMI Eligibility")
     fig, ax = plt.subplots()
     sns.boxplot(x='emi_eligibility', y='monthly_salary', data=df, ax=ax)
     st.pyplot(fig)
 
-    # Graph 8 - Credit Score vs EMI Eligibility
+    st.subheader("Graph 8 - Credit Score vs EMI Eligibility")
     fig, ax = plt.subplots()
     sns.boxplot(x='emi_eligibility', y='credit_score', data=df, ax=ax)
     st.pyplot(fig)
 
-    # Graph 9 - Existing Loan Status
+    st.subheader("Graph 9 - Existing Loan Status")
     fig, ax = plt.subplots()
     sns.countplot(x='existing_loans', hue='emi_eligibility', data=df, ax=ax)
     st.pyplot(fig)
 
-    # Graph 10 - Family Size Distribution
+    st.subheader("Graph 10 - Family Size Distribution")
     fig, ax = plt.subplots()
     sns.histplot(df['family_size'], bins=15, kde=True, color='purple', ax=ax)
     st.pyplot(fig)
 
-    # Graph 11 - Expense Comparison
+    st.subheader("Graph 11 - Expense Comparison")
     fig, ax = plt.subplots()
     sns.barplot(x='emi_eligibility', y='groceries_utilities', data=df, ax=ax)
     st.pyplot(fig)
 
-    # Graph 12 - Gender vs EMI Eligibility
+    st.subheader("Graph 12 - Gender vs EMI Eligibility")
     fig, ax = plt.subplots()
     sns.countplot(x='gender', hue='emi_eligibility', data=df, ax=ax)
     st.pyplot(fig)
 
-    # Graph 13 - Education Level vs EMI Eligibility
+    st.subheader("Graph 13 - Education Level vs EMI Eligibility")
     fig, ax = plt.subplots()
     sns.countplot(x='education', hue='emi_eligibility', data=df, ax=ax)
     plt.xticks(rotation=45)
     st.pyplot(fig)
 
-    # Graph 14 - Loan Amount vs Scenario
+    st.subheader("Graph 14 - Loan Amount vs Scenario")
     fig, ax = plt.subplots()
     sns.boxplot(x='emi_scenario', y='requested_amount', data=df, ax=ax)
     plt.xticks(rotation=45)
     st.pyplot(fig)
 
-    # Graph 15 - Tenure vs Scenario
+    st.subheader("Graph 15 - Tenure vs Scenario")
     fig, ax = plt.subplots()
     sns.boxplot(x='emi_scenario', y='requested_tenure', data=df, ax=ax)
     plt.xticks(rotation=45)
